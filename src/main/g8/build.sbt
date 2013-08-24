@@ -4,10 +4,12 @@ name := "$name$"
 
 version := "$version$"
 
+scalaVersion := "2.10.2"
+
 libraryDependencies ++= Seq(
+  "net.databinder" %% "unfiltered-directives" % "$unfiltered_version$",
   "net.databinder" %% "unfiltered-filter" % "$unfiltered_version$",
   "net.databinder" %% "unfiltered-jetty" % "$unfiltered_version$",
-  "org.clapper" %% "avsl" % "0.4",
   "net.databinder" %% "unfiltered-spec" % "$unfiltered_version$" % "test"
 )
 

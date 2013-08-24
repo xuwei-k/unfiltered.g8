@@ -3,39 +3,48 @@ package com.example
 import unfiltered.request._
 import unfiltered.response._
 
-import org.clapper.avsl.Logger
+import unfiltered.directives._, Directives._
 
-/** unfiltered plan */
+//** unfiltered plan */
 class App extends unfiltered.filter.Plan {
-  import QParams._
 
-  val logger = Logger(classOf[App])
+  def intent = Directive.Intent {
+    case GET(r) =>
+      success(Ok ~> view(Map.empty)(<p> What say you? </p>))
 
-  def intent = {
-    case GET(Path(p)) =>
-      logger.debug("GET %s" format p)
-      Ok ~> view(Map.empty)(<p> What say you? </p>)
-    case POST(Path(p) & Params(params)) =>
-      logger.debug("POST %s" format p)
-      val vw = view(params)_
-      val expected = for {
-        int <- lookup("int") is
-          int { _ + " is not an integer" } is
-          required("missing int")
-        word <- lookup("palindrome") is
-          trimmed is
-          nonempty("Palindrome is empty") is
-          pred(palindrome, { _ + " is not a palindrome" }) is
-          required("missing palindrome")
-      } yield vw(<p>Yup. { int.get } is an integer and { word.get } is a palindrome. </p>)
-      expected(params) orFail { fails =>
-        vw(<ul> { fails.map { f => <li>{f.error} </li> } } </ul>)
+    case POST(Params(params)) =>
+      case class BadParam(msg: String) extends ResponseJoiner(msg)( messages =>
+          view(params)(<ul>{
+            for (message <- messages)
+            yield <li>{message}</li>
+          }</ul>)
+      )
+      implicit def required[T] = data.Requiring[T].fail(name =>
+        BadParam(name + " is missing")
+      )
+      val inputString = data.as.String ~>
+        data.as.String.trimmed ~>
+        data.as.String.nonEmpty.fail(
+          (key, _) => BadParam(s"\$key is empty")
+        )
+      implicit val asInt = inputString ~> data.as.Int.fail(
+        (_, i) => BadParam(s"'\$i' is not an int")
+      )
+
+      for {
+        int & word <-
+          (data.as.Required[Int] named "int") &
+          (inputString ~> data.Conditional(palindrome).fail(
+            (_, value) => BadParam(s"'\$value' is not a palindrome")
+          ) ~> required named "palindrome")
+      } yield {
+        view(params)(<p>Yup. { int } is an integer and { word } is a palindrome. </p>)
       }
   }
   def palindrome(s: String) = s.toLowerCase.reverse == s.toLowerCase
   def view(params: Map[String, Seq[String]])(body: scala.xml.NodeSeq) = {
     def p(k: String) = params.get(k).flatMap { _.headOption } getOrElse("")
-    Html(
+    Html5(
      <html>
       <head>
         <title>uf example</title>
@@ -58,14 +67,12 @@ class App extends unfiltered.filter.Plan {
 
 /** embedded server */
 object Server {
-  val logger = Logger(Server.getClass)
   def main(args: Array[String]) {
     val http = unfiltered.jetty.Http.anylocal // this will not be necessary in 0.4.0
     http.context("/assets") { _.resources(new java.net.URL(getClass().getResource("/www/css"), ".")) }
       .filter(new App).run({ svr =>
         unfiltered.util.Browser.open(http.url)
       }, { svr =>
-        logger.info("shutting down server")
       })
   }
 }
