@@ -68,11 +68,10 @@ class App extends unfiltered.filter.Plan {
 /** embedded server */
 object Server {
   def main(args: Array[String]) {
-    unfiltered.jetty.Http.anylocal.context("/assets") {
+    unfiltered.jetty.Server.anylocal.context("/assets") {
       _.resources(new java.net.URL(getClass().getResource("/www/css"), "."))
-    }.filter(new App).run({ svr =>
-      unfiltered.util.Browser.open(svr.url)
-    }, { svr =>
+    }.plan(new App).run({ svr =>
+      unfiltered.util.Browser.open(svr.portBindings.head.url)
     })
   }
 }
