@@ -6,8 +6,6 @@ import dispatch.classic._
 
 object ExampleSpec extends Specification with unfiltered.specs2.jetty.Served {
 
-  import dispatch._
-
   def setup = { _.filter(new App) }
 
   val http = new Http
