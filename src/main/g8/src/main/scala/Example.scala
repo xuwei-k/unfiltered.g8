@@ -67,7 +67,7 @@ class App extends unfiltered.filter.Plan {
 
 /** embedded server */
 object Server {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     unfiltered.jetty.Server.anylocal.context("/assets") {
       _.resources(new java.net.URL(getClass().getResource("/www/css"), "."))
     }.plan(new App).run({ svr =>
