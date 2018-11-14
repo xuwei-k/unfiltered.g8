@@ -13,3 +13,6 @@ matrix:
     env: SBT_VERSION="0.13.17"
   - scala: 2.12.7
     env: SBT_VERSION="1.2.6"
+  - jdk: openjdk11
+    scala: 2.12.7
+    env: SBT_VERSION="1.2.6"
